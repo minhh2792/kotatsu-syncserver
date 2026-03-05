@@ -43,3 +43,8 @@ out/
 
 ### Dotenv ###
 .env
+
+### Node / Bun ###
+node_modules/
+package-lock.json
+

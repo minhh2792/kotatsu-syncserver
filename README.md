@@ -19,6 +19,16 @@ Synchronization is needed to store your collection of favorites, history and cat
 - Another device connects and syncs with the service;
 - The uploaded data appears on the device connected to the account.
 
+## Tech Stack
+
+This server is built with:
+- **[Bun](https://bun.sh/)** — JavaScript/TypeScript runtime
+- **[Elysia](https://elysiajs.com/)** — Web framework for Bun
+- **[mysql2](https://www.npmjs.com/package/mysql2)** — MySQL/MariaDB driver
+- **[Handlebars](https://handlebarsjs.com/)** — Template engine (`.hbs` files)
+- **[Nodemailer](https://nodemailer.com/)** — Email sending (SMTP)
+- **Bun built-in** — Argon2id password hashing
+
 ## Installation
 
 > [!TIP]
@@ -75,28 +85,20 @@ cp .env.example .env
 docker compose up -d
 ```
 
-### Systemd
+### Run directly with Bun
 
 Requirements:
 
-1. JDK 21+
-2. Gradle 9.0+
+1. [Bun](https://bun.sh/) 1.0+
+2. MySQL or MariaDB
 
 Commands:
 
 ```shell
 git clone https://github.com/KotatsuApp/kotatsu-syncserver.git \
   && cd kotatsu-syncserver \
-  && ./gradlew shadowJar
-```
-
-Then edit file `kotatsu-sync.service`, change `replaceme` fields with your values (MySQL is used for database) and specify the `kotatsu-syncserver-0.0.1.jar` file location (it can be found in `build/libs` directory after building)
-
-```shell
-cp kotatsu-sync.service /etc/systemd/system \
-  && systemctl enable kotatsu-sync \
-  && systemctl daemon-reload \
-  && systemctl start kotatsu-sync
+  && bun install \
+  && bun run src/index.ts
 ```
 
 ## SMTP Configuration (optional)
@@ -108,10 +110,12 @@ To enable real email sending, provide the following environment variables when s
 -e BASE_URL=your_server_address \
 -e SMTP_HOST=your_smtp_host \
 -e SMTP_PORT=your_smtp_port \
--e SMTP_USER=your_smtp_user \
+-e SMTP_USERNAME=your_smtp_user \
 -e SMTP_PASSWORD=your_smtp_password \
 -e SMTP_FROM=your_sender_email
-````
+```
+
+And set `MAIL_PROVIDER=smtp`.
 
 ## FAQ
 
@@ -166,3 +170,4 @@ Password has been successfully reset!
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
 
 You may copy, distribute and modify the software as long as you track changes/dates in source files. Any modifications to or software including (via compiler) GPL-licensed code must also be made available under the GPL along with build & install instructions.
+
