@@ -22,7 +22,7 @@ Synchronization is needed to store your collection of favorites, history and cat
 ## Tech Stack
 
 This server is built with:
-- **[Bun](https://bun.sh/)** — JavaScript/TypeScript runtime
+- **[Bun](https://bun.sh/)** —TypeScript runtime
 - **[Elysia](https://elysiajs.com/)** — Web framework for Bun
 - **[mysql2](https://www.npmjs.com/package/mysql2)** — MySQL/MariaDB driver
 - **[Handlebars](https://handlebarsjs.com/)** — Template engine (`.hbs` files)
