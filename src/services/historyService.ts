@@ -1,7 +1,7 @@
 import type { RowDataPacket } from "mysql2/promise";
 import { getPool } from "../db/index";
 import type { History, HistoryPackage } from "../models/history";
-import { getMangaById, upsertManga } from "./mangaService";
+import { getMangaByIds, upsertManga } from "./mangaService";
 
 export async function syncHistory(
   userId: number,
@@ -30,12 +30,18 @@ async function getHistoryForUser(userId: number): Promise<History[]> {
     [userId]
   );
 
+  if (rows.length === 0) return [];
+
+  const mangaIds = rows.map((r) => Number(r.manga_id));
+  const mangaMap = await getMangaByIds(mangaIds);
+
   const result: History[] = [];
   for (const row of rows) {
-    const manga = await getMangaById(Number(row.manga_id));
+    const mangaId = Number(row.manga_id);
+    const manga = mangaMap.get(mangaId);
     if (!manga) continue;
     result.push({
-      manga_id: Number(row.manga_id),
+      manga_id: mangaId,
       manga,
       created_at: Number(row.created_at),
       updated_at: Number(row.updated_at),

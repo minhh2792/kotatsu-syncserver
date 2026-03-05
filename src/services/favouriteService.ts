@@ -2,7 +2,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import { getPool } from "../db/index";
 import type { Category } from "../models/category";
 import type { Favourite, FavouritesPackage } from "../models/favourite";
-import { getMangaById, upsertManga } from "./mangaService";
+import { getMangaByIds, upsertManga } from "./mangaService";
 import { truncated } from "../utils/string";
 
 export async function syncFavourites(
@@ -56,12 +56,18 @@ async function getFavouritesForUser(userId: number): Promise<Favourite[]> {
     [userId]
   );
 
+  if (rows.length === 0) return [];
+
+  const mangaIds = rows.map((r) => Number(r.manga_id));
+  const mangaMap = await getMangaByIds(mangaIds);
+
   const result: Favourite[] = [];
   for (const row of rows) {
-    const manga = await getMangaById(Number(row.manga_id));
+    const mangaId = Number(row.manga_id);
+    const manga = mangaMap.get(mangaId);
     if (!manga) continue;
     result.push({
-      manga_id: Number(row.manga_id),
+      manga_id: mangaId,
       manga,
       category_id: Number(row.category_id),
       sort_key: Number(row.sort_key),

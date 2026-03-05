@@ -25,8 +25,8 @@ export async function getMangaById(id: number): Promise<Manga | null> {
     [id]
   );
   if (rows.length === 0) return null;
-  const tags = await getMangaTags(id);
-  return mapManga(rows[0], tags);
+  const tagMap = await getTagsForMangaIds([Number(rows[0].id)]);
+  return mapManga(rows[0], tagMap.get(Number(rows[0].id)) ?? []);
 }
 
 export async function getMangaList(offset: number, limit: number): Promise<Manga[]> {
@@ -37,30 +37,59 @@ export async function getMangaList(offset: number, limit: number): Promise<Manga
      FROM manga LIMIT ? OFFSET ?`,
     [limit, offset]
   );
+  if (rows.length === 0) return [];
 
-  const result: Manga[] = [];
+  const mangaIds = rows.map((r) => Number(r.id));
+  const tagMap = await getTagsForMangaIds(mangaIds);
+  return rows.map((row) => mapManga(row, tagMap.get(Number(row.id)) ?? []));
+}
+
+export async function getMangaByIds(ids: number[]): Promise<Map<number, Manga>> {
+  if (ids.length === 0) return new Map();
+  const pool = getPool();
+  const placeholders = ids.map(() => "?").join(",");
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    `SELECT id, title, alt_title, url, public_url, rating, content_rating,
+            cover_url, large_cover_url, state, author, source
+     FROM manga WHERE id IN (${placeholders})`,
+    ids
+  );
+
+  const mangaIds = rows.map((r) => Number(r.id));
+  const tagMap = await getTagsForMangaIds(mangaIds);
+
+  const result = new Map<number, Manga>();
   for (const row of rows) {
-    const tags = await getMangaTags(Number(row.id));
-    result.push(mapManga(row, tags));
+    const id = Number(row.id);
+    result.set(id, mapManga(row, tagMap.get(id) ?? []));
   }
   return result;
 }
 
-async function getMangaTags(mangaId: number): Promise<MangaTag[]> {
+async function getTagsForMangaIds(mangaIds: number[]): Promise<Map<number, MangaTag[]>> {
+  if (mangaIds.length === 0) return new Map();
   const pool = getPool();
+  const placeholders = mangaIds.map(() => "?").join(",");
   const [rows] = await pool.execute<RowDataPacket[]>(
-    `SELECT t.id, t.title, t.key, t.source
+    `SELECT mt.manga_id, t.id, t.title, t.key, t.source
      FROM tags t
      INNER JOIN manga_tags mt ON mt.tag_id = t.id
-     WHERE mt.manga_id = ?`,
-    [mangaId]
+     WHERE mt.manga_id IN (${placeholders})`,
+    mangaIds
   );
-  return rows.map((r) => ({
-    tag_id: Number(r.id),
-    title: r.title as string,
-    key: r.key as string,
-    source: r.source as string,
-  }));
+
+  const tagMap = new Map<number, MangaTag[]>();
+  for (const row of rows) {
+    const mangaId = Number(row.manga_id);
+    if (!tagMap.has(mangaId)) tagMap.set(mangaId, []);
+    tagMap.get(mangaId)!.push({
+      tag_id: Number(row.id),
+      title: row.title as string,
+      key: row.key as string,
+      source: row.source as string,
+    });
+  }
+  return tagMap;
 }
 
 function mapManga(row: RowDataPacket, tags: MangaTag[]): Manga {
@@ -133,3 +162,4 @@ export async function upsertManga(manga: Manga): Promise<void> {
     }
   }
 }
+
