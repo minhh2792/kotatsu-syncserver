@@ -24,11 +24,15 @@ jobs:
           echo "repository=${IMAGE_NAME@L}" >> $GITHUB_OUTPUT
 
       - id: branch-tag
-        name: Sanitize branch name for Docker tag
+        name: Compute Docker tag
         run: |
           BRANCH="${GITHUB_REF_NAME}"
-          SANITIZED="${BRANCH//\//-}"
-          echo "tag=dev-${SANITIZED}" >> $GITHUB_OUTPUT
+          if [ "${BRANCH}" = "master" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            SANITIZED="${BRANCH//\//-}"
+            echo "tag=dev-${SANITIZED}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Checkout
         uses: actions/checkout@v4
