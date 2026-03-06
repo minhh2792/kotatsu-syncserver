@@ -24,6 +24,7 @@ import { syncFavourites } from "./services/favouriteService";
 import { getMailService } from "./services/mailService";
 import { renderTemplate } from "./services/templateService";
 import { hashPassword } from "./utils/password";
+import { logger } from "./utils/logger";
 import type { HistoryPackage } from "./models/history";
 import type { FavouritesPackage } from "./models/favourite";
 
@@ -405,7 +406,7 @@ const app = new Elysia()
         return `404: ${msg}`;
       }
       set.status = 500;
-      console.error(error);
+      logger.error("App", "unhandledError", msg);
       return `500: ${msg}`;
     }
     set.status = 500;
@@ -414,7 +415,7 @@ const app = new Elysia()
 
   .listen(PORT);
 
-console.log(`Kotatsu Sync Server running at http://localhost:${PORT}`);
+logger.success("App", "started", `Kotatsu Sync Server running at http://localhost:${PORT}`);
 
 // ---------- Helpers ----------
 function historyPackageEquals(a: HistoryPackage, b: HistoryPackage): boolean {

@@ -1,3 +1,7 @@
+import { logger } from "../utils/logger";
+
+const SVC = "MailService";
+
 export interface MailSender {
   send(options: {
     to: string;
@@ -9,11 +13,8 @@ export interface MailSender {
 
 export class ConsoleMailSender implements MailSender {
   async send(options: { to: string; subject: string; textBody: string; htmlBody?: string }): Promise<void> {
-    console.log("=== ConsoleMail ===");
-    console.log(`To: ${options.to}`);
-    console.log(`Subject: ${options.subject}`);
-    console.log(`Body (plain):\n${options.textBody}`);
-    console.log("==================");
+    logger.info(SVC, "send (console)", `to=${options.to} subject="${options.subject}"`);
+    logger.info(SVC, "body", options.textBody);
   }
 }
 
@@ -53,9 +54,9 @@ export class SmtpMailSender implements MailSender {
 
     try {
       await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${options.to}`);
+      logger.success(SVC, "send (smtp)", `to=${options.to}`);
     } catch (err) {
-      console.error(`Failed to send email: ${err instanceof Error ? err.message : String(err)}`);
+      logger.error(SVC, "send (smtp) failed", err instanceof Error ? err.message : String(err));
     }
   }
 }
@@ -75,7 +76,9 @@ export function initMailService(provider: string, smtpConfig?: SmtpConfig): void
       throw new Error("SMTP config is required when mail_provider is smtp");
     }
     mailService = new SmtpMailSender(smtpConfig);
+    logger.info(SVC, "initMailService", "provider=smtp");
   } else {
     mailService = new ConsoleMailSender();
+    logger.info(SVC, "initMailService", "provider=console");
   }
 }

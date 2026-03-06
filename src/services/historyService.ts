@@ -2,12 +2,16 @@ import type { RowDataPacket } from "mysql2/promise";
 import { getPool } from "../db/index";
 import type { History, HistoryPackage } from "../models/history";
 import { getMangaByIds, upsertManga } from "./mangaService";
+import { logger } from "../utils/logger";
+
+const SVC = "HistoryService";
 
 export async function syncHistory(
   userId: number,
   historySyncTimestamp: number | null,
   request: HistoryPackage | null
 ): Promise<HistoryPackage> {
+  logger.info(SVC, "syncHistory", `userId=${userId} items=${request?.history.length ?? 0}`);
   if (request !== null) {
     for (const history of request.history) {
       await upsertManga(history.manga);

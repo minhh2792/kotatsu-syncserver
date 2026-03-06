@@ -4,12 +4,16 @@ import type { User, UserInfo, AuthRequest } from "../models/user";
 import { hashPassword, verifyArgon2Password, isArgon2Hash } from "../utils/password";
 import { md5Hex } from "../utils/secure";
 import { generateSecureToken, sha256Hex } from "../utils/secure";
+import { logger } from "../utils/logger";
+
+const SVC = "UserService";
 
 export function toUserInfo(user: User): UserInfo {
   return { id: user.id, email: user.email, nickname: user.nickname };
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
+  logger.info(SVC, "findUserByEmail", email);
   const pool = getPool();
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT id, email, password_hash, password_reset_token_hash,
@@ -23,6 +27,7 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 }
 
 export async function findUserById(id: number): Promise<User | null> {
+  logger.info(SVC, "findUserById", `id=${id}`);
   const pool = getPool();
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT id, email, password_hash, password_reset_token_hash,
@@ -61,6 +66,7 @@ export async function getOrCreateUser(
   request: AuthRequest,
   allowNewRegister: boolean
 ): Promise<UserInfo | null> {
+  logger.info(SVC, "getOrCreateUser", request.email);
   if (request.password.length < 2 || request.password.length > 24) {
     throw new Error("Password should be from 2 to 24 characters long");
   }
@@ -107,6 +113,7 @@ async function registerUser(request: AuthRequest, passwordHash: string): Promise
 }
 
 export async function setPasswordResetToken(userId: number): Promise<string> {
+  logger.info(SVC, "setPasswordResetToken", `userId=${userId}`);
   const pool = getPool();
   const token = generateSecureToken();
   const tokenHash = sha256Hex(token);
@@ -122,6 +129,7 @@ export async function setPasswordResetToken(userId: number): Promise<string> {
 }
 
 export async function findUserByValidPasswordResetToken(token: string): Promise<User | null> {
+  logger.info(SVC, "findUserByValidPasswordResetToken");
   const pool = getPool();
   const tokenHash = sha256Hex(token);
   const now = Math.floor(Date.now() / 1000);
@@ -139,6 +147,7 @@ export async function findUserByValidPasswordResetToken(token: string): Promise<
 }
 
 export async function resetPassword(userId: number, newPasswordHash: string): Promise<void> {
+  logger.info(SVC, "resetPassword", `userId=${userId}`);
   await getPool().execute(
     "UPDATE users SET password_hash = ?, password_reset_token_hash = NULL, password_reset_token_expires_at = NULL WHERE id = ?",
     [newPasswordHash, userId]
@@ -146,6 +155,7 @@ export async function resetPassword(userId: number, newPasswordHash: string): Pr
 }
 
 export async function setFavouritesSynchronized(userId: number, timestamp: number): Promise<void> {
+  logger.info(SVC, "setFavouritesSynchronized", `userId=${userId}`);
   await getPool().execute(
     "UPDATE users SET favourites_sync_timestamp = ? WHERE id = ?",
     [timestamp, userId]
@@ -153,6 +163,7 @@ export async function setFavouritesSynchronized(userId: number, timestamp: numbe
 }
 
 export async function setHistorySynchronized(userId: number, timestamp: number): Promise<void> {
+  logger.info(SVC, "setHistorySynchronized", `userId=${userId}`);
   await getPool().execute(
     "UPDATE users SET history_sync_timestamp = ? WHERE id = ?",
     [timestamp, userId]

@@ -2,6 +2,9 @@ import type { RowDataPacket } from "mysql2/promise";
 import { getPool } from "../db/index";
 import type { Manga, MangaTag } from "../models/manga";
 import { truncated } from "../utils/string";
+import { logger } from "../utils/logger";
+
+const SVC = "MangaService";
 
 const VALID_CONTENT_RATINGS = new Set(["SAFE", "SUGGESTIVE", "ADULT"]);
 const VALID_STATES = new Set(["ONGOING", "FINISHED", "ABANDONED", "PAUSED", "UPCOMING", "RESTRICTED"]);
@@ -17,6 +20,7 @@ function normalizeState(v: string | null | undefined): string | null {
 }
 
 export async function getMangaById(id: number): Promise<Manga | null> {
+  logger.info(SVC, "getMangaById", `id=${id}`);
   const pool = getPool();
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT id, title, alt_title, url, public_url, rating, content_rating,
@@ -30,6 +34,7 @@ export async function getMangaById(id: number): Promise<Manga | null> {
 }
 
 export async function getMangaList(offset: number, limit: number): Promise<Manga[]> {
+  logger.info(SVC, "getMangaList", `offset=${offset} limit=${limit}`);
   const pool = getPool();
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT id, title, alt_title, url, public_url, rating, content_rating,
@@ -45,6 +50,7 @@ export async function getMangaList(offset: number, limit: number): Promise<Manga
 }
 
 export async function getMangaByIds(ids: number[]): Promise<Map<number, Manga>> {
+  logger.info(SVC, "getMangaByIds", `count=${ids.length}`);
   if (ids.length === 0) return new Map();
   const pool = getPool();
   const placeholders = ids.map(() => "?").join(",");
@@ -111,6 +117,7 @@ function mapManga(row: RowDataPacket, tags: MangaTag[]): Manga {
 }
 
 export async function upsertManga(manga: Manga): Promise<void> {
+  logger.info(SVC, "upsertManga", `id=${manga.manga_id} title="${manga.title}"`);
   const pool = getPool();
   await pool.execute(
     `INSERT INTO manga (id, title, alt_title, url, public_url, rating, content_rating,

@@ -4,12 +4,16 @@ import type { Category } from "../models/category";
 import type { Favourite, FavouritesPackage } from "../models/favourite";
 import { getMangaByIds, upsertManga } from "./mangaService";
 import { truncated } from "../utils/string";
+import { logger } from "../utils/logger";
+
+const SVC = "FavouriteService";
 
 export async function syncFavourites(
   userId: number,
   favouritesSyncTimestamp: number | null,
   request: FavouritesPackage | null
 ): Promise<FavouritesPackage> {
+  logger.info(SVC, "syncFavourites", `userId=${userId} categories=${request?.categories.length ?? 0} favourites=${request?.favourites.length ?? 0}`);
   if (request !== null) {
     for (const category of request.categories) {
       await upsertCategory(category, userId);

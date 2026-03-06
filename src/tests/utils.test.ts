@@ -1,8 +1,9 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, spyOn } from "bun:test";
 import { sha256Hex, md5Hex, generateSecureToken } from "../utils/secure";
 import { truncated } from "../utils/string";
 import { isArgon2Hash, hashPassword, verifyArgon2Password } from "../utils/password";
 import { RateLimiter } from "../utils/rateLimiter";
+import { logger } from "../utils/logger";
 
 describe("sha256Hex", () => {
   test("produces correct hash for known input", () => {
@@ -158,5 +159,47 @@ describe("RateLimiter", () => {
     // Wait well past the window to avoid timing flakiness
     await new Promise((r) => setTimeout(r, 100));
     expect(limiter.check("key3")).toBe(true);
+  });
+});
+
+describe("logger", () => {
+  test("logger.info calls console.log", () => {
+    const spy = spyOn(console, "log");
+    logger.info("TestSvc", "testOp", "some detail");
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+
+  test("logger.warn calls console.warn", () => {
+    const spy = spyOn(console, "warn");
+    logger.warn("TestSvc", "testWarn");
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+
+  test("logger.error calls console.error", () => {
+    const spy = spyOn(console, "error");
+    logger.error("TestSvc", "testError", "oops");
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+
+  test("logger.success calls console.log", () => {
+    const spy = spyOn(console, "log");
+    logger.success("TestSvc", "testSuccess");
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+  });
+
+  test("log output contains service name and operation", () => {
+    const calls: string[] = [];
+    const spy = spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      calls.push(args.join(" "));
+    });
+    logger.info("MyService", "myOperation", "detail");
+    spy.mockRestore();
+    expect(calls[0]).toContain("MyService");
+    expect(calls[0]).toContain("myOperation");
+    expect(calls[0]).toContain("detail");
   });
 });
